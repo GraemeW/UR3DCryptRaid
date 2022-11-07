@@ -31,22 +31,39 @@ void UGrabber::BeginPlay()
 void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	UpdateHoldPosition();
+}
+
+void UGrabber::UpdateHoldPosition()
+{
+	if (PhysicsHandle == nullptr) { return; }
+
+	FVector HoldPosition = GetComponentLocation() + GetForwardVector() * HoldOffset;
+	PhysicsHandle->SetTargetLocationAndRotation(HoldPosition, GetComponentRotation());
 }
 
 void UGrabber::Grab()
 {
-	UE_LOG(LogTemp, Display, TEXT("Initiated grabber"));
+	if (PhysicsHandle == nullptr) { return; }
+
+	if (DebugEnabled) { UE_LOG(LogTemp, Display, TEXT("Initiated grabber")); }
+
 	FVector StartPoint;
 	FVector EndPoint;
 	GetGrabPoints(StartPoint, EndPoint);
-	DrawDebugLine(GetWorld(), StartPoint, EndPoint, FColor::Red, false, 0.1);
-	DrawDebugSphere(GetWorld(), EndPoint, 10, 10, FColor::Blue, false, 5);
+	if (DebugEnabled)
+	{
+		DrawDebugLine(GetWorld(), StartPoint, EndPoint, FColor::Red, false, 0.1);
+		DrawDebugSphere(GetWorld(), EndPoint, 10, 10, FColor::Blue, false, 5);
+	}
+
 	CastToGrab(StartPoint, EndPoint);
 }
 
 void UGrabber::Release()
 {
-	UE_LOG(LogTemp, Display, TEXT("Released grabber"));
+	if (DebugEnabled) { UE_LOG(LogTemp, Display, TEXT("Released grabber")); }
 }
 
 void UGrabber::GetGrabPoints(FVector& OutStartPoint, FVector& OutEndPoint)
@@ -74,12 +91,22 @@ void UGrabber::CastToGrab(const FVector& StartPoint, const FVector& EndPoint)
 		AActor* HitActor = HitResult.GetActor();
 		FString HitActorName = HitActor->GetActorNameOrLabel();
 
-		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 10, 10, FColor::Green, false, 5);
-		UE_LOG(LogTemp, Display, TEXT("Found a grabbable object:  %s"), *HitActorName);
+		if (DebugEnabled) 
+		{
+			DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 10, 10, FColor::Green, false, 5);
+			UE_LOG(LogTemp, Display, TEXT("Found a grabbable object:  %s"), *HitActorName);
+		}
+
+		PhysicsHandle->GrabComponentAtLocationWithRotation(
+			HitResult.GetComponent(),
+			NAME_None,
+			HitResult.ImpactPoint,
+			GetComponentRotation()
+		);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Display, TEXT("Nothing to grab"));
+		if (DebugEnabled) { UE_LOG(LogTemp, Display, TEXT("Nothing to grab")); }
 	}
 }
 

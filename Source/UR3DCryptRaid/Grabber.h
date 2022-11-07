@@ -31,8 +31,10 @@ public:
 
 private:
 	// Exposed Properties
+	UPROPERTY(EditAnywhere) bool DebugEnabled = true;
 	UPROPERTY(EditAnywhere) float MaxGrabDistance = 400;
 	UPROPERTY(EditAnywhere) float GrabRadius = 100;
+	UPROPERTY(EditAnywhere) float HoldOffset = 200;
 
 	// Cached References
 	UPhysicsHandleComponent *PhysicsHandle = nullptr;
@@ -40,4 +42,5 @@ private:
 	// Private Methods
 	void GetGrabPoints(FVector& StartPoint, FVector& EndPoint);
 	void CastToGrab(const FVector& StartPoint, const FVector& EndPoint);
+	void UpdateHoldPosition();
 };

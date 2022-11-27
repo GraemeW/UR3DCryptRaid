@@ -39,8 +39,11 @@ void UGrabber::UpdateHoldPosition()
 {
 	if (PhysicsHandle == nullptr) { return; }
 
-	FVector HoldPosition = GetComponentLocation() + GetForwardVector() * HoldOffset;
-	PhysicsHandle->SetTargetLocationAndRotation(HoldPosition, GetComponentRotation());
+	if (PhysicsHandle->GetGrabbedComponent() != nullptr)
+	{
+		FVector HoldPosition = GetComponentLocation() + GetForwardVector() * HoldOffset;
+		PhysicsHandle->SetTargetLocationAndRotation(HoldPosition, GetComponentRotation());
+	}
 }
 
 void UGrabber::Grab()
@@ -49,21 +52,30 @@ void UGrabber::Grab()
 
 	if (DebugEnabled) { UE_LOG(LogTemp, Display, TEXT("Initiated grabber")); }
 
-	FVector StartPoint;
-	FVector EndPoint;
-	GetGrabPoints(StartPoint, EndPoint);
-	if (DebugEnabled)
+	FHitResult HitResult;
+	if (GetGrabbableInReach(HitResult))
 	{
-		DrawDebugLine(GetWorld(), StartPoint, EndPoint, FColor::Red, false, 0.1);
-		DrawDebugSphere(GetWorld(), EndPoint, 10, 10, FColor::Blue, false, 5);
+		GrabObject(HitResult);
 	}
-
-	CastToGrab(StartPoint, EndPoint);
+	else
+	{
+		if (DebugEnabled) { UE_LOG(LogTemp, Display, TEXT("Nothing to grab")); }
+	}
 }
 
 void UGrabber::Release()
 {
 	if (DebugEnabled) { UE_LOG(LogTemp, Display, TEXT("Released grabber")); }
+
+	if (GrabbedComponent != nullptr)
+	{ 
+		GrabbedComponent->WakeAllRigidBodies();
+		GrabbedComponent = nullptr; 
+	}
+	if (PhysicsHandle->GetGrabbedComponent() != nullptr)
+	{ 
+		PhysicsHandle->ReleaseComponent(); 
+	}
 }
 
 void UGrabber::GetGrabPoints(FVector& OutStartPoint, FVector& OutEndPoint)
@@ -73,40 +85,49 @@ void UGrabber::GetGrabPoints(FVector& OutStartPoint, FVector& OutEndPoint)
 	OutEndPoint = GetComponentLocation() + GetForwardVector() * MaxGrabDistance;
 }
 
-void UGrabber::CastToGrab(const FVector& StartPoint, const FVector& EndPoint)
+bool UGrabber::GetGrabbableInReach(FHitResult& HitResult)
 {
-	FCollisionShape Sphere = FCollisionShape::MakeSphere(GrabRadius);
-	FHitResult HitResult;
+	FVector StartPoint;
+	FVector EndPoint;
+	GetGrabPoints(StartPoint, EndPoint);
+	if (DebugEnabled)
+	{
+		DrawDebugLine(GetWorld(), StartPoint, EndPoint, FColor::Red, false, 0.1);
+		DrawDebugSphere(GetWorld(), EndPoint, 10, 10, FColor::Blue, false, 5);
+	}
 
-	bool HasHit = false;
-	HasHit = GetWorld()->SweepSingleByChannel(HitResult,
+	FCollisionShape Sphere = FCollisionShape::MakeSphere(GrabRadius);
+
+	return GetWorld()->SweepSingleByChannel(HitResult,
 		StartPoint, EndPoint,
 		FQuat::Identity,
 		ECC_GameTraceChannel2,
 		Sphere
 	);
+}
 
-	if (HasHit)
+void UGrabber::GrabObject(const FHitResult& HitResult)
+{
+	if (&HitResult == nullptr) { return; }
+
+	AActor* HitActor = HitResult.GetActor();
+	FString HitActorName = HitActor->GetActorNameOrLabel();
+
+	if (DebugEnabled)
 	{
-		AActor* HitActor = HitResult.GetActor();
-		FString HitActorName = HitActor->GetActorNameOrLabel();
-
-		if (DebugEnabled) 
-		{
-			DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 10, 10, FColor::Green, false, 5);
-			UE_LOG(LogTemp, Display, TEXT("Found a grabbable object:  %s"), *HitActorName);
-		}
-
-		PhysicsHandle->GrabComponentAtLocationWithRotation(
-			HitResult.GetComponent(),
-			NAME_None,
-			HitResult.ImpactPoint,
-			GetComponentRotation()
-		);
+		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 10, 10, FColor::Green, false, 5);
+		UE_LOG(LogTemp, Display, TEXT("Found a grabbable object:  %s"), *HitActorName);
 	}
-	else
-	{
-		if (DebugEnabled) { UE_LOG(LogTemp, Display, TEXT("Nothing to grab")); }
-	}
+
+	GrabbedComponent = HitResult.GetComponent();
+	if (GrabbedComponent == nullptr) { return; }
+
+	GrabbedComponent->WakeAllRigidBodies();
+	PhysicsHandle->GrabComponentAtLocationWithRotation(
+		GrabbedComponent,
+		NAME_None,
+		HitResult.ImpactPoint,
+		GetComponentRotation()
+	);
 }
 

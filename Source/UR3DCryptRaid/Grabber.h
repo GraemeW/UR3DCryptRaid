@@ -36,11 +36,13 @@ private:
 	UPROPERTY(EditAnywhere) float GrabRadius = 100;
 	UPROPERTY(EditAnywhere) float HoldOffset = 200;
 
-	// Cached References
+	// Cached References / State
 	UPhysicsHandleComponent *PhysicsHandle = nullptr;
+	UPrimitiveComponent* GrabbedComponent = nullptr;
 
 	// Private Methods
 	void GetGrabPoints(FVector& StartPoint, FVector& EndPoint);
-	void CastToGrab(const FVector& StartPoint, const FVector& EndPoint);
+	void GrabObject(const FHitResult& HitResult);
+	bool GetGrabbableInReach(FHitResult& HitResult);
 	void UpdateHoldPosition();
 };

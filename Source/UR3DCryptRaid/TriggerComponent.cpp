@@ -3,11 +3,28 @@
 
 #include "TriggerComponent.h"
 
+
+UTriggerComponent::UTriggerComponent()
+{
+	PrimaryComponentTick.bCanEverTick = true;
+}
+
 // Called when the game starts
 void UTriggerComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UE_LOG(LogTemp, Display, TEXT("Trigger Component Initialized!"));
 }
 
+
+void UTriggerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	TSet <AActor*> OverlappingObjects;
+	GetOverlappingActors(OverlappingObjects);
+
+	for (AActor* OverlappingObject : OverlappingObjects)
+	{
+		UE_LOG(LogTemp, Display, TEXT("Overlapping component found:  %s"), *OverlappingObject->GetActorNameOrLabel());
+	}
+}

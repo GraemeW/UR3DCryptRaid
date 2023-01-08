@@ -8,7 +8,7 @@ UGrabber::UGrabber()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 }
-
+const FName UGrabber::TagGrabbed = "Grabbed";
 
 // Called when the game starts
 void UGrabber::BeginPlay()
@@ -55,6 +55,7 @@ void UGrabber::Grab()
 	FHitResult HitResult;
 	if (GetGrabbableInReach(HitResult))
 	{
+		UpdateGrabTag(true, HitResult.GetActor());
 		GrabObject(HitResult);
 	}
 	else
@@ -69,12 +70,28 @@ void UGrabber::Release()
 
 	if (GrabbedComponent != nullptr)
 	{ 
+		AActor* GrabbedActor = GrabbedComponent->GetOwner();
+		if (GrabbedActor != nullptr) { UpdateGrabTag(false, GrabbedActor); }
+
 		GrabbedComponent->WakeAllRigidBodies();
 		GrabbedComponent = nullptr; 
 	}
 	if (PhysicsHandle->GetGrabbedComponent() != nullptr)
 	{ 
 		PhysicsHandle->ReleaseComponent(); 
+	}
+}
+
+void UGrabber::UpdateGrabTag(bool enable, AActor* GrabbedActor)
+{
+	if (enable)
+	{
+		GrabbedActor->Tags.Remove(TagGrabbed);
+		GrabbedActor->Tags.Add(TagGrabbed);
+	}
+	else
+	{
+		GrabbedActor->Tags.Remove(TagGrabbed);
 	}
 }
 

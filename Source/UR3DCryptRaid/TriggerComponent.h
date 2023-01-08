@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
-
 #include "CoreMinimal.h"
 #include "Components/BoxComponent.h"
+#include "Grabber.h"
+#include "Mover.h"
 #include "TriggerComponent.generated.h"
-
 /**
  * 
  */
@@ -25,6 +25,20 @@ protected:
 public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	UFUNCTION(BlueprintCallable) TArray<UMover*> GetOnTriggerMovers();
+	UFUNCTION(BlueprintCallable) void SetMovers(TArray<UMover*> Movers);
 
+private:
+	// Serializable Properties
+	UPROPERTY(EditAnywhere) FString TriggerTag;
+	UPROPERTY(EditAnywhere) TArray<AActor*> OnTriggerMoverActors;
+	UPROPERTY(EditAnywhere) bool CheckForGrabberRelease;
+	UPROPERTY(EditAnywhere) bool BindObjectToTrigger;
 
+	// State
+	TArray<UMover*> Movers;
+	bool triggered = false;
+
+	// Private Methods
+	AActor* GetAcceptableActor();
 };

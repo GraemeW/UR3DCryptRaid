@@ -15,6 +15,7 @@ class UR3DCRYPTRAID_API UGrabber : public USceneComponent
 public:	
 	// Sets default values for this component's properties
 	UGrabber();
+	static const FName TagGrabbed;
 
 protected:
 	// Called when the game starts
@@ -41,6 +42,7 @@ private:
 	UPrimitiveComponent* GrabbedComponent = nullptr;
 
 	// Private Methods
+	void UpdateGrabTag(bool enable, AActor* GrabbedActor);
 	void GetGrabPoints(FVector& StartPoint, FVector& EndPoint);
 	void GrabObject(const FHitResult& HitResult);
 	bool GetGrabbableInReach(FHitResult& HitResult);
